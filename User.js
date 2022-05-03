@@ -31,9 +31,42 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: () => Date.now(),
     },
-    bestFriend: mongoose.SchemaTypes.ObjectId,
+    bestFriend: {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "User",
+    },
     hobbies: [String],
     address: addressSchema,
+})
+
+userSchema.methods.sayHi = function() {
+    console.log(`Hi. My name is ${this.name}`)
+}
+
+//can only be called on user itself
+userSchema.statics.findByName = function(name){
+    return this.find({ name: new RegExp(name, 'i')})
+}
+
+//can only be called with .find() or .where() first as a query
+userSchema.query.byName = function(name){
+    return this.where({ name: new RegExp(name, 'i')})
+}
+
+//helpful for data you want to use all of the time but dont want to seperately store in database
+userSchema.virtual('namedEmail').get(function(){
+    return `${this.name} <${this.email}>`
+})
+
+//middleware before a save, can also be after and for different actions
+userSchema.pre('save', function(next){
+    this.updatedAt = Date.now()
+    next()
+})
+
+userSchema.post('save', function(doc, next){
+    doc.sayHi()
+    next()
 })
 
 module.exports = mongoose.model("User", userSchema)
